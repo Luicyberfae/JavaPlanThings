@@ -1,94 +1,141 @@
+import java.util.*;
+import java.util.function.*;
+import java.util.stream.Collectors;
+
 /**
- * PlantFactory - DESIGN PATTERN: Factory Method
+ * PlantFactory - DESIGN PATTERN: Factory Method + FUNCTIONAL PROGRAMMING
  * 
- * This class implements the Factory Method design pattern.
- * Instead of directly instantiating plant objects, we use this factory
- * to create plants based on a choice parameter.
+ * This class implements the Factory Method design pattern with FUNCTIONAL enhancements:
+ * - Lambda expressions for plant creation
+ * - Optional for null safety
+ * - Stream API for filtering and mapping
+ * - Predicates for validation
  * 
  * BENEFITS:
  * - Encapsulates object creation logic
  * - Easier to add new plant types without modifying existing code
  * - Centralizes plant instantiation
  * - Follows the Open/Closed Principle (open for extension, closed for modification)
- * 
- * Converts the Python dictionary approach into a more OOP way
+ * - Functional programming for cleaner, more expressive code
  */
 public class PlantFactory {
 
-    // Available plant choices
-    private static final String[] PLANT_CHOICES = {
-            "1", "2", "3", "4", "5"
-    };
+    // FUNCTIONAL PROGRAMMING: HashMap with Supplier lambdas for plant creation
+    private static final Map<String, Supplier<Plant>> PLANT_SUPPLIERS = new HashMap<>() {{
+        put("1", Potato::new);          // Method reference (lambda shorthand)
+        put("2", Marigold::new);
+        put("3", Tomato::new);
+        put("4", Cucumber::new);
+        put("5", Sunflower::new);
+    }};
+
+    // Plant metadata using functional approach
+    private static final Map<String, String> PLANT_NAMES = new HashMap<>() {{
+        put("1", "Peruna (Potato)");
+        put("2", "Calendula (Marigold)");
+        put("3", "Lycopersicum (Tomato)");
+        put("4", "Cucumis (Cucumber)");
+        put("5", "Helianthus (Sunflower)");
+    }};
+
+    // PREDICATE: Validates plant choice
+    private static final Predicate<String> IS_VALID_CHOICE = 
+        choice -> PLANT_SUPPLIERS.containsKey(choice.trim());
 
     /**
-     * Creates a plant based on the given choice
+     * FUNCTIONAL: Creates a plant using Optional and lambda
+     * 
+     * @param choice The plant choice (1-5)
+     * @return Optional containing Plant object, or empty if invalid
+     */
+    public static Optional<Plant> createPlantSafe(String choice) {
+        return Optional.ofNullable(choice)
+                .map(String::trim)
+                .filter(IS_VALID_CHOICE)
+                .map(PLANT_SUPPLIERS::get)
+                .map(Supplier::get);
+    }
+
+    /**
+     * Creates a plant based on the given choice (backward compatible)
      * 
      * @param choice The plant choice (1-5)
      * @return A new Plant object of the selected type, or null if invalid choice
      */
     public static Plant createPlant(String choice) {
-        switch (choice.trim()) {
-            case "1":
-                return new Potato();
-            case "2":
-                return new Marigold();
-            case "3":
-                return new Tomato();
-            case "4":
-                return new Cucumber();
-            case "5":
-                return new Sunflower();
-            default:
-                System.out.println("Invalid choice. Please pick a number between 1 and 5.");
-                return null;
-        }
+        return createPlantSafe(choice)
+                .orElseGet(() -> {
+                    System.out.println("Invalid choice. Please pick a number between 1 and 5.");
+                    return null;
+                });
     }
 
     /**
-     * Returns the name of a plant based on choice (for display)
+     * FUNCTIONAL: Returns the name of a plant using Optional
      * 
      * @param choice The plant choice
-     * @return Plant name
+     * @return Plant name or "Unknown Plant"
      */
     public static String getPlantName(String choice) {
-        switch (choice.trim()) {
-            case "1":
-                return "Peruna (Potato)";
-            case "2":
-                return "Calendula (Marigold)";
-            case "3":
-                return "Lycopersicum (Tomato)";
-            case "4":
-                return "Cucumis (Cucumber)";
-            case "5":
-                return "Helianthus (Sunflower)";
-            default:
-                return "Unknown Plant";
-        }
+        return Optional.ofNullable(choice)
+                .map(String::trim)
+                .map(PLANT_NAMES::get)
+                .orElse("Unknown Plant");
     }
 
     /**
-     * Returns all available plant choices
+     * STREAM API: Returns all available plant choices
      * 
-     * @return Array of valid plant choice strings
+     * @return List of valid plant choice strings
      */
-    public static String[] getAvailableChoices() {
-        return PLANT_CHOICES;
+    public static List<String> getAvailableChoices() {
+        return new ArrayList<>(PLANT_SUPPLIERS.keySet());
     }
 
     /**
-     * Gets all plant names except the chosen one (for display purposes)
+     * STREAM + LAMBDA: Gets all plant names except the chosen one
      * 
      * @param chosenPlantChoice The choice of the plant the player selected
-     * @return Array of other plant names
+     * @return List of other plant names
      */
-    public static String[] getOtherPlants(String chosenPlantChoice) {
-        java.util.List<String> otherPlants = new java.util.ArrayList<>();
-        for (String choice : PLANT_CHOICES) {
-            if (!choice.equals(chosenPlantChoice.trim())) {
-                otherPlants.add(getPlantName(choice));
-            }
-        }
-        return otherPlants.toArray(new String[0]);
+    public static List<String> getOtherPlants(String chosenPlantChoice) {
+        String normalizedChoice = chosenPlantChoice.trim();
+        
+        // STREAM with filter and map operations
+        return PLANT_NAMES.entrySet().stream()
+                .filter(entry -> !entry.getKey().equals(normalizedChoice))  // Predicate lambda
+                .map(Map.Entry::getValue)                                   // Function lambda
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * FUNCTIONAL: Creates all plant types as a list using Stream
+     * Useful for batch operations or testing
+     * 
+     * @return List of all plant instances
+     */
+    public static List<Plant> createAllPlants() {
+        return PLANT_SUPPLIERS.values().stream()
+                .map(Supplier::get)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * PREDICATE: Validates if a choice is valid
+     * 
+     * @param choice The choice to validate
+     * @return true if valid, false otherwise
+     */
+    public static boolean isValidChoice(String choice) {
+        return IS_VALID_CHOICE.test(choice);
+    }
+
+    /**
+     * FUNCTIONAL: Get plant count using functional approach
+     * 
+     * @return Number of available plant types
+     */
+    public static long getPlantCount() {
+        return PLANT_SUPPLIERS.keySet().stream().count();
     }
 }

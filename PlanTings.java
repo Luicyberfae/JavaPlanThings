@@ -1,23 +1,34 @@
 import java.io.*;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.Random;
-import java.util.Scanner;
+import java.util.*;
+import java.util.function.*;
+import java.util.stream.Collectors;
 
 /**
  * PlanTings Game - Main Game Controller
  * 
- * Converted from Python game to Java with OOP principles and Design Patterns
+ * Converted from Python game to Java with OOP principles, Design Patterns, and
+ * FUNCTIONAL PROGRAMMING
  * 
  * KEY OOP PRINCIPLES DEMONSTRATED:
- * ✓ Encapsulation - Player and Plant classes have private fields with getters/setters
+ * ✓ Encapsulation - Player and Plant classes have private fields with
+ * getters/setters
  * ✓ Inheritance - Potato, Marigold, Tomato, Cucumber, Sunflower extend Plant
- * ✓ Polymorphism - Each plant type implements water(), bask(), harvestProduct() differently
+ * ✓ Polymorphism - Each plant type implements water(), bask(), harvestProduct()
+ * differently
  * ✓ Abstraction - Plant is an abstract class; Season is an enum
  * 
  * DESIGN PATTERN: Factory Method
  * - PlantFactory creates plant objects without exposing creation logic
  * - Makes code more maintainable and extensible
+ * 
+ * FUNCTIONAL PROGRAMMING FEATURES:
+ * ✓ Lambdas - Concise action handlers and functional interfaces
+ * ✓ Streams - Filter, map, and reduce operations on collections
+ * ✓ Predicates - Functional validation and filtering
+ * ✓ Optional - Null-safe operations
+ * ✓ Method References - Concise lambda expressions
  */
 public class PlanTings {
 
@@ -29,6 +40,33 @@ public class PlanTings {
     private static int seeds;
     private static int points = 0;
     private static final String GAME_STATE_FILE = "planTings_game_state.txt";
+
+    // FUNCTIONAL PROGRAMMING: Predicates for plant health checks
+    private static final Predicate<Plant> IS_HEALTHY = plant -> plant.getHealth() > 70;
+
+    private static final Predicate<Plant> NEEDS_WATER = plant -> plant.getWaterLevel() < 30;
+
+    private static final Predicate<Plant> NEEDS_SUNLIGHT = plant -> plant.getSunlightLevel() < 30;
+
+    private static final Predicate<Plant> IS_READY_TO_HARVEST = plant -> plant.getGrowthStage() >= 5;
+
+    // FUNCTIONAL: BiConsumer for game actions (action + points)
+    private static final Map<String, BiConsumer<Plant, Integer>> GAME_ACTIONS = new HashMap<>() {
+        {
+            put("1", (plant, pts) -> {
+                plant.water();
+                points += pts;
+            });
+            put("2", (plant, pts) -> {
+                plant.bask();
+                points += pts;
+            });
+            put("5", (plant, pts) -> {
+                plant.grow();
+                points += pts;
+            });
+        }
+    };
 
     public static void main(String[] args) {
         clearScreen();
@@ -121,21 +159,18 @@ public class PlanTings {
     }
 
     /**
-     * Displays other available plants
+     * FUNCTIONAL: Displays other available plants using Stream API
      */
     private static void displayOtherPlants() {
         printHeader("PlanTings Cultivations");
         System.out.println("\nOther members of Cultivations include:\n");
 
-        // Get current plant choice (simplified - show all except current)
-        String[] otherPlants = {"Peruna (Potato)", "Calendula (Marigold)", "Lycopersicum (Tomato)",
-                "Cucumis (Cucumber)", "Helianthus (Sunflower)"};
+        // STREAM API: Create all plants, filter out current, and display
+        PlantFactory.createAllPlants().stream()
+                .map(Plant::getName)
+                .filter(name -> !name.equals(currentPlant.getName()))
+                .forEach(name -> System.out.println("  • " + name));
 
-        for (String plant : otherPlants) {
-            if (!plant.equals(currentPlant.getName())) {
-                System.out.println("  • " + plant);
-            }
-        }
         System.out.println();
     }
 
@@ -190,72 +225,144 @@ public class PlanTings {
     }
 
     /**
-     * Main game loop - player takes care of plant
+     * FUNCTIONAL: Main game loop with lambda-based action handlers
      */
     private static void gameLoop() {
         clearScreen();
         boolean gameRunning = true;
 
         while (gameRunning && currentPlant.isAlive()) {
-            printHeader("PlanTings Cultivations - Game Loop");
-            System.out.println("\nCurrent Plant Status:");
-            System.out.println("  Health: " + currentPlant.getHealth() + "/100");
-            System.out.println("  Water: " + currentPlant.getWaterLevel() + "/100");
-            System.out.println("  Sunlight: " + currentPlant.getSunlightLevel() + "/100");
-            System.out.println("  Growth Stage: " + currentPlant.getGrowthStage());
-            System.out.println("  Points Earned: " + points + "\n");
+            displayPlantStatus();
+            displayGameMenu();
 
-            System.out.println("What would you like to do?");
-            System.out.println("1. Water the plant");
-            System.out.println("2. Give sunlight");
-            System.out.println("3. Check plant status");
-            System.out.println("4. Try to harvest");
-            System.out.println("5. Pass time (plant grows)");
-            System.out.println("6. Quit game\n");
+            // FUNCTIONAL: Show plant care suggestions using predicates
+            showCareSuggestions();
 
             System.out.print("Choose an action (1-6): ");
             String choice = scanner.nextLine().trim();
 
-            switch (choice) {
-                case "1":
-                    currentPlant.water();
-                    points += 5;
-                    break;
-                case "2":
-                    currentPlant.bask();
-                    points += 5;
-                    break;
-                case "3":
-                    System.out.println("\n" + currentPlant);
-                    break;
-                case "4":
-                    System.out.println("\n" + currentPlant.harvestProduct());
-                    if (currentPlant.getGrowthStage() >= 5) {
-                        points += 50;
-                        System.out.println("You earned 50 bonus points!");
-                        gameRunning = false;
-                    }
-                    break;
-                case "5":
-                    currentPlant.grow();
-                    points += 2;
-                    break;
-                case "6":
-                    System.out.println("\nThanks for playing PlanTings!");
-                    gameRunning = false;
-                    break;
-                default:
-                    System.out.println("Invalid choice. Please try again.");
-                    continue;
+            // FUNCTIONAL: Execute action using BiConsumer from map
+            if (GAME_ACTIONS.containsKey(choice)) {
+                int actionPoints = choice.equals("5") ? 2 : 5;
+                GAME_ACTIONS.get(choice).accept(currentPlant, actionPoints);
+            } else {
+                // Handle special cases using functional approach
+                gameRunning = handleSpecialActions(choice, gameRunning);
             }
 
             pause(2);
             clearScreen();
         }
 
-        if (!currentPlant.isAlive()) {
-            System.out.println("\nGame Over! Your plant has withered.\n");
+        displayGameOver();
+    }
+
+    /**
+     * FUNCTIONAL: Displays plant status with health indicators
+     */
+    private static void displayPlantStatus() {
+        printHeader("PlanTings Cultivations - Game Loop");
+        System.out.println("\nCurrent Plant Status:");
+        System.out.println("  Health: " + currentPlant.getHealth() + "/100 " +
+                (IS_HEALTHY.test(currentPlant) ? "✓" : "⚠"));
+        System.out.println("  Water: " + currentPlant.getWaterLevel() + "/100 " +
+                (NEEDS_WATER.test(currentPlant) ? "⚠" : "✓"));
+        System.out.println("  Sunlight: " + currentPlant.getSunlightLevel() + "/100 " +
+                (NEEDS_SUNLIGHT.test(currentPlant) ? "⚠" : "✓"));
+        System.out.println("  Growth Stage: " + currentPlant.getGrowthStage() +
+                (IS_READY_TO_HARVEST.test(currentPlant) ? " (Ready to Harvest!)" : ""));
+        System.out.println("  Points Earned: " + points + "\n");
+    }
+
+    /**
+     * Displays game menu
+     */
+    private static void displayGameMenu() {
+        System.out.println("What would you like to do?");
+        System.out.println("1. Water the plant");
+        System.out.println("2. Give sunlight");
+        System.out.println("3. Check plant status");
+        System.out.println("4. Try to harvest");
+        System.out.println("5. Pass time (plant grows)");
+        System.out.println("6. Quit game\n");
+    }
+
+    /**
+     * FUNCTIONAL: Shows care suggestions based on plant predicates
+     */
+    private static void showCareSuggestions() {
+        List<String> suggestions = new ArrayList<>();
+
+        // PREDICATE-based suggestions
+        if (NEEDS_WATER.test(currentPlant)) {
+            suggestions.add("💧 Plant needs water!");
         }
+        if (NEEDS_SUNLIGHT.test(currentPlant)) {
+            suggestions.add("☀ Plant needs sunlight!");
+        }
+        if (IS_READY_TO_HARVEST.test(currentPlant)) {
+            suggestions.add("🌱 Plant is ready to harvest!");
+        }
+
+        // STREAM: Display all suggestions
+        if (!suggestions.isEmpty()) {
+            System.out.println("Suggestions:");
+            suggestions.forEach(s -> System.out.println("  " + s));
+            System.out.println();
+        }
+    }
+
+    /**
+     * FUNCTIONAL: Handles special actions (3, 4, 6) using Optional
+     */
+    private static boolean handleSpecialActions(String choice, boolean gameRunning) {
+        switch (choice) {
+            case "3":
+                displayDetailedPlantInfo();
+                return gameRunning;
+            case "4":
+                return handleHarvest();
+            case "6":
+                System.out.println("\nThanks for playing PlanTings!");
+                return false;
+            default:
+                System.out.println("Invalid choice. Please try again.");
+                return gameRunning;
+        }
+    }
+
+    /**
+     * FUNCTIONAL: Displays detailed plant information
+     */
+    private static void displayDetailedPlantInfo() {
+        System.out.println("\n" + currentPlant);
+        System.out.println("\nHealth Status: " +
+                (IS_HEALTHY.test(currentPlant) ? "Healthy" : "Needs Care"));
+    }
+
+    /**
+     * FUNCTIONAL: Handles harvest with predicate validation
+     */
+    private static boolean handleHarvest() {
+        String harvestMessage = currentPlant.harvestProduct();
+        System.out.println("\n" + harvestMessage);
+
+        // PREDICATE: Check if harvest was successful
+        if (IS_READY_TO_HARVEST.test(currentPlant)) {
+            points += 50;
+            System.out.println("You earned 50 bonus points!");
+            return false; // End game after successful harvest
+        }
+        return true; // Continue game
+    }
+
+    /**
+     * FUNCTIONAL: Displays game over screen
+     */
+    private static void displayGameOver() {
+        Optional.of(currentPlant)
+                .filter(plant -> !plant.isAlive())
+                .ifPresent(plant -> System.out.println("\nGame Over! Your plant has withered.\n"));
 
         System.out.println("Final Score: " + points + " points");
     }
