@@ -5,7 +5,8 @@ import java.util.stream.Collectors;
 /**
  * PlantFactory - DESIGN PATTERN: Factory Method + FUNCTIONAL PROGRAMMING
  * 
- * This class implements the Factory Method design pattern with FUNCTIONAL enhancements:
+ * This class implements the Factory Method design pattern with FUNCTIONAL
+ * enhancements:
  * - Lambda expressions for plant creation
  * - Optional for null safety
  * - Stream API for filtering and mapping
@@ -15,32 +16,36 @@ import java.util.stream.Collectors;
  * - Encapsulates object creation logic
  * - Easier to add new plant types without modifying existing code
  * - Centralizes plant instantiation
- * - Follows the Open/Closed Principle (open for extension, closed for modification)
+ * - Follows the Open/Closed Principle (open for extension, closed for
+ * modification)
  * - Functional programming for cleaner, more expressive code
  */
 public class PlantFactory {
 
     // FUNCTIONAL PROGRAMMING: HashMap with Supplier lambdas for plant creation
-    private static final Map<String, Supplier<Plant>> PLANT_SUPPLIERS = new HashMap<>() {{
-        put("1", Potato::new);          // Method reference (lambda shorthand)
-        put("2", Marigold::new);
-        put("3", Tomato::new);
-        put("4", Cucumber::new);
-        put("5", Sunflower::new);
-    }};
+    private static final Map<String, Supplier<Plant>> PLANT_SUPPLIERS = new HashMap<>() {
+        {
+            put("1", Potato::new); // Method reference (lambda shorthand)
+            put("2", Marigold::new);
+            put("3", Tomato::new);
+            put("4", Cucumber::new);
+            put("5", Sunflower::new);
+        }
+    };
 
     // Plant metadata using functional approach
-    private static final Map<String, String> PLANT_NAMES = new HashMap<>() {{
-        put("1", "Peruna (Potato)");
-        put("2", "Calendula (Marigold)");
-        put("3", "Lycopersicum (Tomato)");
-        put("4", "Cucumis (Cucumber)");
-        put("5", "Helianthus (Sunflower)");
-    }};
+    private static final Map<String, String> PLANT_NAMES = new HashMap<>() {
+        {
+            put("1", "Peruna (Potato)");
+            put("2", "Calendula (Marigold)");
+            put("3", "Lycopersicum (Tomato)");
+            put("4", "Cucumis (Cucumber)");
+            put("5", "Helianthus (Sunflower)");
+        }
+    };
 
     // PREDICATE: Validates plant choice
-    private static final Predicate<String> IS_VALID_CHOICE = 
-        choice -> PLANT_SUPPLIERS.containsKey(choice.trim());
+    private static final Predicate<String> IS_VALID_CHOICE = choice -> PLANT_SUPPLIERS.containsKey(choice.trim());
 
     /**
      * FUNCTIONAL: Creates a plant using Optional and lambda
@@ -100,11 +105,11 @@ public class PlantFactory {
      */
     public static List<String> getOtherPlants(String chosenPlantChoice) {
         String normalizedChoice = chosenPlantChoice.trim();
-        
+
         // STREAM with filter and map operations
         return PLANT_NAMES.entrySet().stream()
-                .filter(entry -> !entry.getKey().equals(normalizedChoice))  // Predicate lambda
-                .map(Map.Entry::getValue)                                   // Function lambda
+                .filter(entry -> !entry.getKey().equals(normalizedChoice)) // Predicate lambda
+                .map(Map.Entry::getValue) // Function lambda
                 .collect(Collectors.toList());
     }
 
