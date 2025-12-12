@@ -1,0 +1,12 @@
+PlanTings Game State
+====================
+
+Player: Lui
+Character Name: Plant_L
+Plant: Helianthus (Sunflower)
+Plant Health: 100
+Plant Growth Stage: 1
+Seeds: 6
+Season: Winter
+Points Earned: 0
+Plant Status: Alive
